@@ -1,0 +1,26 @@
+---
+
+- name: create zot configuration directory
+  when:
+    - not running_in_check_mode
+  ansible.builtin.file:
+    path: "{{ zot_config_dir }}"
+    state: directory
+    owner: root
+    group: "{{ zot_system_group }}"
+    mode: "0770"
+
+- name: create zot configuration
+  when:
+    - not running_in_check_mode
+  ansible.builtin.template:
+    src: "etc/zot/config.json.j2"
+    dest: "{{ zot_config_dir }}/config.json"
+    force: true
+    owner: root
+    group: "{{ zot_system_group }}"
+    mode: "0640"
+  notify:
+    - restart zot
+
+...

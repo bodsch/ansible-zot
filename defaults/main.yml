@@ -1,0 +1,29 @@
+---
+
+zot_version: '2.1.16'
+
+zot_system_user: root
+zot_system_group: zot
+zot_config_dir: /etc/zot
+
+zot_direct_download: false
+
+zot_release: {}
+  # download_url: https://get.helm.sh
+  # https://get.helm.sh/zot-v0.16.3-linux-amd64.tar.gz
+  # file: zot-v{{ zot_version }}-{{ ansible_facts.system | lower }}-{{ system_architecture }}.tar.gz
+
+zot_systemd:
+  unit:
+    after:
+      - syslog.target
+      - network.target
+    wants: []
+    requires: []
+  service:
+    limits:
+      nofile:
+        soft: ""
+        hard: ""
+
+zot_service: {}

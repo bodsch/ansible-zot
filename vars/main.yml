@@ -1,0 +1,70 @@
+---
+
+zot_main_version: "{{ zot_version[0:3] }}"
+
+zot_install_path: /usr/local/opt/zot/{{ zot_version }}
+
+zot_delegate_to: localhost
+
+zot_local_tmp_directory: "{{
+  lookup('env', 'CUSTOM_LOCAL_TMP_DIRECTORY') |
+  default(lookup('env', 'HOME') ~ '/.cache/ansible/zot', true) }}/{{ zot_version }}"
+
+zot_defaults_service:
+  debug: false
+  listen:
+    host: 127.0.0.1
+    port: 8080
+  chart_url: ""
+  depth: 1
+  log:
+    json: true
+    latency_integer: false
+    health: false
+  storage:
+    backend: local
+    local:
+      rootdir: /var/cache/zot
+    microsoft: {}
+    openstack: {}
+    etcd: {}
+    amazon: {}
+    google: {}
+    alibaba: {}
+  cache:
+    redis:
+      address: ""
+      password: ""
+      db: ""
+    interval: ""
+  metrics: true
+  basic_auth:
+    user: ""
+    pass: ""
+    anonymous_get: true
+  tls:
+    cert: ""
+    key: ""
+    ca_cert: ""
+
+zot_defaults_release:
+  download_url: https://github.com/project-zot/zot/releases
+  file: zot-{{ ansible_facts.system | lower }}-{{ system_architecture }}
+  checksum: checksums.sha256.txt
+  binary: zot
+
+# ----------------------------------------------------------------------------------------
+
+zot_upgrade: false
+
+zot_defaults_directory: /etc/default
+
+go_arch_map:
+  x86_64: 'amd64'
+  aarch64: 'arm64'
+  armv7l: 'armv7'
+  armv6l: 'armv6'
+
+system_architecture: "{{ go_arch_map[ansible_facts.architecture] | default(ansible_facts.architecture) }}"
+
+systemd_lib_directory: /lib/systemd/system

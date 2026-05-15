@@ -1,0 +1,127 @@
+---
+
+- name: user and group handling
+  when:
+    - not running_in_check_mode
+    - zot_system_user != "root" or
+      zot_system_group != "root"
+  block:
+    - name: create zot group
+      when:
+        - zot_system_group != "root"
+      ansible.builtin.group:
+        name: "{{ zot_system_group }}"
+        state: present
+        system: true
+
+    - name: create zot user
+      when:
+        - zot_system_user != "root"
+      ansible.builtin.user:
+        name: "{{ zot_system_user }}"
+        groups: "{{ zot_system_group }}"
+        append: true
+        shell: /usr/sbin/nologin
+        system: true
+        createhome: false
+        home: /nonexistent
+
+- name: create install directory
+  when:
+    - not running_in_check_mode
+  ansible.builtin.file:
+    path: "{{ zot_install_path }}"
+    state: directory
+    owner: "{{ zot_system_user }}"
+    group: "{{ zot_system_group }}"
+    mode: "0755"
+
+- name: deploy and activate zot version {{ zot_version }}
+  when:
+    - not running_in_check_mode
+  bodsch.core.deploy_and_activate:
+    src_dir: "{{ zot_local_tmp_directory }}"
+    install_dir: "{{ zot_install_path }}"
+    link_dir: "/usr/bin"
+    remote_src: "{{ ('true' if zot_direct_download else 'false') | bool }}"
+    owner: "{{ zot_system_user }}"
+    group: "{{ zot_system_group }}"
+    mode: "0755"
+    items:
+      - name: "{{ zot_release.binary }}"
+        capability: "cap_net_raw+ep"
+  notify:
+    - restart zot
+
+- name: create local storage directory
+  when:
+    - not running_in_check_mode
+    - zot_service is defined
+    - zot_service.storage is defined
+    - zot_service.storage.backend is defined
+    - zot_service.storage.backend == "local"
+    - zot_service.storage.local is defined
+    - zot_service.storage.local.rootdir is defined
+    - zot_service.storage.local.rootdir | string | length > 0
+  ansible.builtin.file:
+    path: "{{ zot_service.storage.local.rootdir }}"
+    state: directory
+    owner: "{{ zot_system_user }}"
+    group: "{{ zot_system_group }}"
+    mode: "0755"
+
+- name: systemd
+  when:
+    - not running_in_check_mode
+    - ansible_facts.service_mgr | lower == "systemd"
+  block:
+    - name: create zot run configuration
+      ansible.builtin.template:
+        src: "default/zot.j2"
+        dest: "{{ zot_defaults_directory }}/zot"
+        force: true
+        owner: root
+        group: "{{ zot_system_group }}"
+        mode: "0640"
+      notify:
+        - restart zot
+
+    - name: create systemd service unit
+      ansible.builtin.template:
+        src: "init/systemd/zot.service.j2"
+        dest: "{{ systemd_lib_directory }}/zot.service"
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - daemon-reload
+        - restart zot
+
+- name: openrc
+  when:
+    - not running_in_check_mode
+    - ansible_facts.service_mgr | lower == "openrc"
+  block:
+    - name: create openrc service configuration
+      ansible.builtin.template:
+        src: "init/openrc/conf.d/zot.j2"
+        dest: "/etc/conf.d/zot"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: create openrc init configuration
+      ansible.builtin.template:
+        src: "init/openrc/init.d/zot.j2"
+        dest: "/etc/init.d/zot"
+        owner: root
+        group: root
+        mode: "0750"
+
+- name: create custom fact file
+  when:
+    - not running_in_check_mode
+  bodsch.core.facts:
+    name: zot
+    facts:
+      version: "{{ zot_version }}"

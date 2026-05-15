@@ -1,0 +1,190 @@
+---
+
+- name: get latest release
+  when:
+    - not running_in_check_mode
+    - zot_version == "latest"
+  delegate_to: localhost
+  become: false
+  run_once: true
+  block:
+    - name: get latest release
+      delegate_to: localhost
+      become: false
+      run_once: true
+      bodsch.scm.github_latest:
+        project: project-zot
+        repository: zot
+        user: "{{ lookup('env', 'GH_USER') | default(omit) }}"
+        password: "{{ lookup('env', 'GH_TOKEN') | default(omit) }}"
+      register: _latest_release
+
+    - name: re-define zot_version
+      ansible.builtin.set_fact:
+        zot_version: "{{ _latest_release.latest_release }}"
+
+- name: define download information
+  when:
+    - not running_in_check_mode
+  ansible.builtin.set_fact:
+    zot_release: "{{ zot_defaults_release | combine(zot_release, recursive=True) }}"
+
+- name: define delegate instance for download handling
+  when:
+    - not running_in_check_mode
+    - zot_direct_download
+  ansible.builtin.set_fact:
+    zot_delegate_to: "{{ (ansible_facts | default({})) | bodsch.core.hostname(inventory_hostname=inventory_hostname) }}"
+    zot_local_tmp_directory: "{{
+        lookup('env', 'CUSTOM_LOCAL_TMP_DIRECTORY') |
+        default('/var/cache/ansible/zot', true) }}/{{ zot_version }}"
+
+- name: create download directory
+  when:
+    - not running_in_check_mode
+  become: false
+  delegate_to: "{{ zot_delegate_to }}"
+  run_once: "{{ 'false' if zot_direct_download else 'true' }}"
+  ansible.builtin.file:
+    path: "{{ zot_local_tmp_directory }}"
+    state: directory
+    mode: "0750"
+  check_mode: false
+
+- name: detect the downloaded zot file
+  when:
+    - not running_in_check_mode
+  become: false
+  delegate_to: "{{ zot_delegate_to }}"
+  run_once: "{{ 'false' if zot_direct_download else 'true' }}"
+  ansible.builtin.stat:
+    path: "{{ zot_local_tmp_directory }}/{{ zot_release.file }}"
+  register: stat_zot_archive
+
+- name: download
+  when:
+    - not running_in_check_mode
+    - stat_zot_archive.stat is defined
+    - not stat_zot_archive.stat.exists | default('false')
+  block:
+    - name: checksum
+      become: false
+      delegate_to: localhost
+      run_once: true
+      block:
+        - name: get checksum list
+          bodsch.scm.github_checksum:
+            project: project-zot
+            repository: zot
+            checksum_file: "{{ zot_release.checksum }}"
+            user: "{{ lookup('env', 'GH_USER') | default(omit) }}"
+            password: "{{ lookup('env', 'GH_TOKEN') | default(omit) }}"
+            architecture: "{{ ansible_facts.architecture }}"
+            system: "{{ ansible_facts.system }}"
+            version: "v{{ zot_version }}"
+          register: _latest_checksum
+
+        - name: de
+          debug:
+            msg: "{{ _latest_checksum }}"
+
+        - name: define checksum for {{ system_architecture }} architecture
+          ansible.builtin.set_fact:
+            __zot_checksum: "sha256:{{
+                _latest_checksum.checksum | bodsch.core.parse_checksum(
+                    application='zot',
+                    os=ansible_facts.system,
+                    arch=system_architecture,
+                    file_extension='')
+            }}"
+          when:
+            - _latest_checksum.rc == 0
+            - _latest_checksum.checksum is defined
+            - _latest_checksum.checksum | string | length > 0
+
+    - name: download zot binary file
+      become: false
+      delegate_to: "{{ zot_delegate_to }}"
+      run_once: "{{ 'false' if zot_direct_download else 'true' }}"
+      ansible.builtin.get_url:
+        url: "{{ zot_release.download_url }}/download/v{{ zot_version }}/{{ zot_release.file }}"
+        dest: "{{ zot_local_tmp_directory }}/{{ zot_release.file }}"
+        checksum: "{{ __zot_checksum | default(omit) }}"
+        mode: "0640"
+      register: _download_archive
+      until: _download_archive is succeeded
+      retries: 5
+      delay: 2
+
+  rescue:
+    - name: delete download directory
+      become: false
+      delegate_to: "{{ zot_delegate_to }}"
+      run_once: "{{ 'false' if zot_direct_download else 'true' }}"
+      ansible.builtin.file:
+        path: "{{ zot_local_tmp_directory }}"
+        state: absent
+
+    - name: exit with fail
+      ansible.builtin.fail:
+        msg: A serious error occurred when downloading the archive.
+
+# - name: detect extracted binary
+#   when:
+#     - not running_in_check_mode
+#   become: false
+#   delegate_to: "{{ zot_delegate_to }}"
+#   run_once: "{{ 'false' if zot_direct_download else 'true' }}"
+#   ansible.builtin.stat:
+#     path: "{{ zot_local_tmp_directory }}/zot"
+#   register: stat_zot_binary
+#
+# - name: extract zot archive
+#   when:
+#     - not running_in_check_mode
+#     - stat_zot_binary.stat is defined
+#     - not stat_zot_binary.stat.exists | default('false')
+#   become: false
+#   delegate_to: "{{ zot_delegate_to }}"
+#   run_once: "{{ 'false' if zot_direct_download else 'true' }}"
+#   ansible.builtin.unarchive:
+#     src: "{{ zot_local_tmp_directory }}/{{ zot_release.file }}"
+#     dest: "{{ zot_local_tmp_directory }}/"
+#     copy: false
+#     extra_opts:
+#       - --strip-components=1
+
+- name: find extracted binaries
+  when:
+    - not running_in_check_mode
+  become: false
+  delegate_to: "{{ zot_delegate_to }}"
+  run_once: "{{ 'false' if zot_direct_download else 'true' }}"
+  ansible.builtin.find:
+    paths: "{{ zot_local_tmp_directory }}"
+    file_type: file
+    patterns:
+      - "zot*"
+    recurse: false
+  register: found_binaries
+  no_log: true
+
+- name: define monitoring_plugins_directory
+  when:
+    - found_binaries.files is defined
+    - found_binaries.files | count > 0
+  ansible.builtin.set_fact:
+    stat_zot_extracted_file: "{{ found_binaries.files | sort(attribute='path', reverse=True) | map(attribute='path') | list | first }}"
+
+- name: rename zot binary
+  when:
+    - not running_in_check_mode
+    - stat_zot_extracted_file | default('') | string | length > 0
+  become: false
+  delegate_to: "{{ zot_delegate_to }}"
+  run_once: "{{ 'false' if zot_direct_download else 'true' }}"
+  ansible.builtin.copy:
+    src: "{{ stat_zot_extracted_file }}"
+    dest: "{{ zot_local_tmp_directory }}/{{ zot_release.binary }}"
+    mode: "0755"
+    remote_src: "{{ ('true' if zot_direct_download else 'false') | bool }}"

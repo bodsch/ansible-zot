@@ -1,0 +1,33 @@
+---
+
+- name: prepare
+  ansible.builtin.import_tasks: prepare.yml
+  tags:
+    - zot_install
+    - zot_configure
+    - zot_run
+
+- name: download archive
+  ansible.builtin.import_tasks: download.yml
+  become: true
+  tags:
+    - zot_install
+
+- name: install
+  ansible.builtin.import_tasks: install.yml
+  tags:
+    - zot_install
+
+- name: configure
+  ansible.builtin.import_tasks: configure.yml
+  tags:
+    - zot_configure
+
+# - name: service
+#   ansible.builtin.import_tasks: service.yml
+#   become: true
+#   tags:
+#     - zot_run
+#     - zot_configure
+
+...

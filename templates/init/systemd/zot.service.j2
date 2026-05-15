@@ -1,0 +1,39 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+# {{ ansible_managed }}
+
+[Unit]
+Description             = zot, a production-ready vendor-neutral OCI image registry
+
+{% if zot_systemd.unit.after is defined and
+      zot_systemd.unit.after | count > 0 %}
+After                   = {{ zot_systemd.unit.after | join(' ') }}
+{% endif %}
+{% if zot_systemd.unit.wants is defined and
+      zot_systemd.unit.wants | count > 0 %}
+Wants                   = {{ zot_systemd.unit.wants | join(' ') }}
+{% endif %}
+{% if zot_systemd.unit.requires is defined and
+      zot_systemd.unit.requires | count > 0 %}
+Requires                = network.target {{ zot_systemd.unit.requires | join(' ') }}
+{% endif %}
+
+[Service]
+
+RestartSec              = 4s
+Type                    = simple
+User                    = {{ zot_system_user }}
+Group                   = {{ zot_system_group }}
+
+# If using Unix socket: tells systemd to create the /run/zot folder, which will contain the zot.sock file
+# (manually creating /run/zot doesn't work, because it would not persist across reboots)
+RuntimeDirectory        = zot
+
+EnvironmentFile         = -{{ zot_defaults_directory }}/zot
+
+ExecStart               = /usr/bin/zot serve $OPTIONS
+
+Restart                 = always
+ExecReload              = /bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy                = multi-user.target
