@@ -9,15 +9,24 @@ zot_config:
       name: redis
       url: "redis://127.0.0.1:6379"
       keyprefix: "zot"
+
   http:
     address: "127.0.0.1"
     port: "8080"
+
   log:
     level: "debug"
+
   extensions:
     metrics:
       enable: true
       prometheus:
         path: /metrics
+    search:
+      enable: true
+      cve:
+        updateInterval: "24h"
+    ui:
+      enable: true
 
 ...

@@ -1,3 +1,6 @@
 ---
 
+zot_requirements:
+  - python3-dateutil
+
 ...
