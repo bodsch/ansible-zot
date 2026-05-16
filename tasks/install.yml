@@ -53,23 +53,6 @@
   notify:
     - restart zot
 
-- name: create local storage directory
-  when:
-    - not running_in_check_mode
-    - zot_service is defined
-    - zot_service.storage is defined
-    - zot_service.storage.backend is defined
-    - zot_service.storage.backend == "local"
-    - zot_service.storage.local is defined
-    - zot_service.storage.local.rootdir is defined
-    - zot_service.storage.local.rootdir | string | length > 0
-  ansible.builtin.file:
-    path: "{{ zot_service.storage.local.rootdir }}"
-    state: directory
-    owner: "{{ zot_system_user }}"
-    group: "{{ zot_system_group }}"
-    mode: "0755"
-
 - name: systemd
   when:
     - not running_in_check_mode

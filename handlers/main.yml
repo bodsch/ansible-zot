@@ -8,6 +8,13 @@
   when:
     - ansible_facts.service_mgr == 'systemd'
 
+- name: validate zot config
+  ansible.builtin.command:
+    cmd: "zot verify {{ zot_config_dir }}/config.json"
+  register: zot_valid_config
+  notify:
+    - restart zot
+
 - name: restart zot
   become: true
   ansible.builtin.service:

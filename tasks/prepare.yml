@@ -36,8 +36,4 @@
     name: "{{ zot_requirements }}"
     state: present
 
-- name: merge zot configuration between defaults and custom
-  ansible.builtin.set_fact:
-    zot_service: "{{ zot_defaults_service | combine(zot_service, recursive=True) }}"
-
 ...

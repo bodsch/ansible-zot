@@ -23,11 +23,12 @@
   tags:
     - zot_configure
 
-# - name: service
-#   ansible.builtin.import_tasks: service.yml
-#   become: true
-#   tags:
-#     - zot_run
-#     - zot_configure
+- name: service
+  ansible.builtin.import_tasks: service.yml
+  become: true
+  tags:
+    - zot_run
+    - zot_service
+    - zot_configure
 
 ...

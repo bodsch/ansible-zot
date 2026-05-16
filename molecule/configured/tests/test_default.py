@@ -50,7 +50,7 @@ def test_version(host):
 def test_storage_directory(host, get_vars):
     """ """
     storage = (
-        get_vars.get("zot_service", {})
+        get_vars.get("zot_config", {})
         .get("storage", {})
         .get("local", {})
         .get("rootdir", None)
@@ -79,17 +79,17 @@ def test_open_port(host, get_vars):
     for i in host.socket.get_listening_sockets():
         print(i)
 
-    zot_service = get_vars.get("zot_service", {})
+    zot_config = get_vars.get("zot_config", {})
 
-    print(zot_service)
+    print(zot_config)
 
-    listen_address = "127.0.0.1:8080"
+    listen_address = "127.0.0.1:5000"
 
-    if isinstance(zot_service, dict):
-        _listen = zot_service.get("listen")
+    if isinstance(zot_config, dict):
+        _listen = zot_config.get("http")
 
         if isinstance(_listen, dict):
-            _address = _listen.get("host")
+            _address = _listen.get("address")
             _port = _listen.get("port")
 
             listen_address = f"{_address}:{_port}"

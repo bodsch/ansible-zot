@@ -1,5 +1,23 @@
 ---
 
+- name: merge zot configuration between defaults and custom
+  ansible.builtin.set_fact:
+    zot_config: "{{ zot_defaults_config | combine(zot_config, recursive=True) }}"
+
+- name: create local storage directory
+  when:
+    - not running_in_check_mode
+    - zot_config is defined
+    - zot_config.storage is defined
+    - zot_config.storage.rootDirectory is defined
+    - zot_config.storage.rootDirectory | string | length > 0
+  ansible.builtin.file:
+    path: "{{ zot_config.storage.rootDirectory }}"
+    state: directory
+    owner: "{{ zot_system_user }}"
+    group: "{{ zot_system_group }}"
+    mode: "0755"
+
 - name: create zot configuration directory
   when:
     - not running_in_check_mode
@@ -21,6 +39,7 @@
     group: "{{ zot_system_group }}"
     mode: "0640"
   notify:
+    - validate zot config
     - restart zot
 
 ...

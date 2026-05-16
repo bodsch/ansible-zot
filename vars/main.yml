@@ -10,42 +10,15 @@ zot_local_tmp_directory: "{{
   lookup('env', 'CUSTOM_LOCAL_TMP_DIRECTORY') |
   default(lookup('env', 'HOME') ~ '/.cache/ansible/zot', true) }}/{{ zot_version }}"
 
-zot_defaults_service:
-  debug: false
-  listen:
-    host: 127.0.0.1
-    port: 8080
-  chart_url: ""
-  depth: 1
-  log:
-    json: true
-    latency_integer: false
-    health: false
+zot_defaults_config:
+  distSpecVersion: "1.1.1"
   storage:
-    backend: local
-    local:
-      rootdir: /var/cache/zot
-    microsoft: {}
-    openstack: {}
-    etcd: {}
-    amazon: {}
-    google: {}
-    alibaba: {}
-  cache:
-    redis:
-      address: ""
-      password: ""
-      db: ""
-    interval: ""
-  metrics: true
-  basic_auth:
-    user: ""
-    pass: ""
-    anonymous_get: true
-  tls:
-    cert: ""
-    key: ""
-    ca_cert: ""
+    rootDirectory: /var/lib/zot
+  http:
+    address: "127.0.0.1"
+    port: "8080"
+  log:
+    level: "info"
 
 zot_defaults_release:
   download_url: https://github.com/project-zot/zot/releases
