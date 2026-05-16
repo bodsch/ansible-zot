@@ -83,13 +83,13 @@ def test_open_port(host, get_vars):
 
     print(zot_config)
 
-    listen_address = "127.0.0.1:8080"
+    listen_address = "127.0.0.1:5000"
 
     if isinstance(zot_config, dict):
-        _listen = zot_config.get("listen")
+        _listen = zot_config.get("http")
 
         if isinstance(_listen, dict):
-            _address = _listen.get("host")
+            _address = _listen.get("address")
             _port = _listen.get("port")
 
             listen_address = f"{_address}:{_port}"

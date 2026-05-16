@@ -4,9 +4,30 @@ zot_config:
   distSpecVersion: "1.1.1"
   storage:
     rootDirectory: /var/cache/zot
+
+    cacheDriver:
+      # boltdb (default, local) | dynamodb | redis
+      name: boltdb
+
+    retention:
+      dryRun: false
+      delay: "24h"
+
+  extensions:
+    metrics:
+      enable: true
+      prometheus:
+        path: /metrics
+    search:
+      enable: true
+      cve:
+        updateInterval: "24h"
+    ui:
+      enable: true
+
   http:
     address: "0.0.0.0"
-    port: "8080"
+    port: "5000"
   log:
     level: "debug"
 
