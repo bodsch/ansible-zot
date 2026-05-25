@@ -84,10 +84,6 @@
             version: "v{{ zot_version }}"
           register: _latest_checksum
 
-        - name: de
-          debug:
-            msg: "{{ _latest_checksum }}"
-
         - name: define checksum for {{ system_architecture }} architecture
           ansible.builtin.set_fact:
             __zot_checksum: "sha256:{{
@@ -128,31 +124,6 @@
     - name: exit with fail
       ansible.builtin.fail:
         msg: A serious error occurred when downloading the archive.
-
-# - name: detect extracted binary
-#   when:
-#     - not running_in_check_mode
-#   become: false
-#   delegate_to: "{{ zot_delegate_to }}"
-#   run_once: "{{ 'false' if zot_direct_download else 'true' }}"
-#   ansible.builtin.stat:
-#     path: "{{ zot_local_tmp_directory }}/zot"
-#   register: stat_zot_binary
-#
-# - name: extract zot archive
-#   when:
-#     - not running_in_check_mode
-#     - stat_zot_binary.stat is defined
-#     - not stat_zot_binary.stat.exists | default('false')
-#   become: false
-#   delegate_to: "{{ zot_delegate_to }}"
-#   run_once: "{{ 'false' if zot_direct_download else 'true' }}"
-#   ansible.builtin.unarchive:
-#     src: "{{ zot_local_tmp_directory }}/{{ zot_release.file }}"
-#     dest: "{{ zot_local_tmp_directory }}/"
-#     copy: false
-#     extra_opts:
-#       - --strip-components=1
 
 - name: find extracted binaries
   when:
