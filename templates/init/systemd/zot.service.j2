@@ -21,8 +21,8 @@ Requires                = network.target {{ zot_systemd.unit.requires | join(' '
 
 RestartSec              = 4s
 Type                    = simple
-User                    = {{ zot_system_user }}
-Group                   = {{ zot_system_group }}
+User                    = {{ zot_system_user.owner }}
+Group                   = {{ zot_system_user.group }}
 
 # If using Unix socket: tells systemd to create the /run/zot folder, which will contain the zot.sock file
 # (manually creating /run/zot doesn't work, because it would not persist across reboots)

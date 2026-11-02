@@ -14,8 +14,8 @@
   ansible.builtin.file:
     path: "{{ zot_config.storage.rootDirectory }}"
     state: directory
-    owner: "{{ zot_system_user }}"
-    group: "{{ zot_system_group }}"
+    owner: "{{ zot_system_user.owner }}"
+    group: "{{ zot_system_user.group }}"
     mode: "0755"
 
 - name: create zot configuration directory
@@ -25,7 +25,7 @@
     path: "{{ zot_config_dir }}"
     state: directory
     owner: root
-    group: "{{ zot_system_group }}"
+    group: "{{ zot_system_user.group }}"
     mode: "0770"
 
 - name: create zot configuration
@@ -36,7 +36,7 @@
     dest: "{{ zot_config_dir }}/config.json"
     force: true
     owner: root
-    group: "{{ zot_system_group }}"
+    group: "{{ zot_system_user.group }}"
     mode: "0640"
   notify:
     - validate zot config

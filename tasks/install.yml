@@ -3,23 +3,23 @@
 - name: user and group handling
   when:
     - not running_in_check_mode
-    - zot_system_user != "root" or
-      zot_system_group != "root"
+    - zot_system_user.owner != "root" or
+      zot_system_user.group != "root"
   block:
     - name: create zot group
       when:
-        - zot_system_group != "root"
+        - zot_system_user.group != "root"
       ansible.builtin.group:
-        name: "{{ zot_system_group }}"
+        name: "{{ zot_system_user.group }}"
         state: present
         system: true
 
     - name: create zot user
       when:
-        - zot_system_user != "root"
+        - zot_system_user.owner != "root"
       ansible.builtin.user:
-        name: "{{ zot_system_user }}"
-        groups: "{{ zot_system_group }}"
+        name: "{{ zot_system_user.owner }}"
+        groups: "{{ zot_system_user.group }}"
         append: true
         shell: /usr/sbin/nologin
         system: true
@@ -32,8 +32,8 @@
   ansible.builtin.file:
     path: "{{ zot_install_path }}"
     state: directory
-    owner: "{{ zot_system_user }}"
-    group: "{{ zot_system_group }}"
+    owner: "{{ zot_system_user.owner }}"
+    group: "{{ zot_system_user.group }}"
     mode: "0755"
 
 - name: deploy and activate zot version {{ zot_version }}
@@ -44,11 +44,13 @@
     install_dir: "{{ zot_install_path }}"
     link_dir: "/usr/bin"
     remote_src: "{{ ('true' if zot_direct_download else 'false') | bool }}"
-    owner: "{{ zot_system_user }}"
-    group: "{{ zot_system_group }}"
+    owner: "{{ zot_system_user.owner }}"
+    group: "{{ zot_system_user.group }}"
     mode: "0755"
     items:
       - name: "{{ zot_release.binary }}"
+        src: "zot-{{ ansible_facts.system | lower }}-{{ system_architecture }}"
+        link_name: "{{ zot_release.binary }}"
         capability: "cap_net_raw+ep"
   notify:
     - restart zot
@@ -64,7 +66,7 @@
         dest: "{{ zot_defaults_directory }}/zot"
         force: true
         owner: root
-        group: "{{ zot_system_group }}"
+        group: "{{ zot_system_user.group }}"
         mode: "0640"
       notify:
         - restart zot

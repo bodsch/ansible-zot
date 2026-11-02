@@ -21,9 +21,11 @@ zot_defaults_config:
     level: "info"
 
 zot_defaults_release:
-  download_url: https://github.com/project-zot/zot/releases
+  provider: github
+  host: https://github.com
+  project:  project-zot
+  repository: zot
   file: zot-{{ ansible_facts.system | lower }}-{{ system_architecture }}
-  checksum: checksums.sha256.txt
   binary: zot
 
 # ----------------------------------------------------------------------------------------

@@ -14,14 +14,14 @@ testinfra_hosts = infra_hosts(host_name="instance")
 
 def test_user(host, get_vars):
     """ """
-    user = get_vars.get("zot_system_user", "zot")
-    group = get_vars.get("zot_system_group", "zot")
+    owner = get_vars.get("zot_system_user", {}).get("owner", "zot")
+    group = get_vars.get("zot_system_user", {}).get("group", "zot")
 
     assert host.group(group).exists
-    assert host.user(user).exists
+    assert host.user(owner).exists
 
-    if user != "root":
-        assert group in host.user(user).groups
+    if owner != "root":
+        assert group in host.user(owner).groups
 
 
 def test_version(host):
